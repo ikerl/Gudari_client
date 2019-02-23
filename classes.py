@@ -488,9 +488,9 @@ class GudariRC4Handler(RevHandlerRC4):
         Msg.info("FORWARD RUNNING")
 
 class GudariShell(RevHandler): 
-    def __init__(self, lhost, lport):
+    def __init__(self, lhost, lport, sType):
         RevHandler.__init__(self, lhost, lport)        
-        self.TYPE="revshell"
+        self.TYPE=sType
 
     def sktRecv(self, s):
         try:

