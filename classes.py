@@ -104,6 +104,7 @@ class RevHandler:
     sock=socket.socket()    
     TYPE="basic"
     CONNECTED=False
+    busy=True
 
     def __init__(self, lhost, lport):
         self.LHOST=lhost
@@ -116,7 +117,13 @@ class RevHandler:
                 if not data:
                     Msg.err("Port: {0:d} Session terminated".format(self.LPORT))
                     return
-                print(str(data.decode(errors='ignore')))
+                dataResponse = str(data.decode(errors='ignore'))
+                if "Response End" in dataResponse:
+                    dataResponse = dataResponse.replace("Response End","")
+                    print(dataResponse+"\n", end=" ")
+                    self.busy = False
+                else:
+                    print(dataResponse+"\n", end=" ")
                 sys.stdout.flush()
         except KeyboardInterrupt:
             return
@@ -127,6 +134,7 @@ class RevHandler:
 
     def sktSend(self, data):
         self.sock.send(data.encode())
+        self.busy = True
 
     def connect(self):
         try:
@@ -174,6 +182,7 @@ class RevHandlerRC4:
     TYPE="basic"
     CONNECTED=False
     password=""
+    busy=True
 
     def __init__(self, lhost, lport, password):
         self.LHOST=lhost
@@ -183,15 +192,21 @@ class RevHandlerRC4:
     def sktRecv(self, s):
         try:
             while self.CONNECTED:
-                data = s.recv(1026)
+                data = s.recv(2)
                 if not data:
                     Msg.err("Port: {0:d} Session terminated".format(self.LPORT))
                     return
+                print(data[:2])
                 receiveSize = struct.unpack("<H",data[:2])[0]
+                data = s.recv(receiveSize)
                 if receiveSize != 1:
-		    #print("Recibiendo {} \m".format(receiveSize))
-                    plaintext = rc4Decrypt(data[2:receiveSize+2], bytes(str(self.password), 'utf-8'))
-                    print(plaintext.encode("utf-8").decode('utf-8')+"\n", end=" ")
+                    print("Recibiendo {} \m".format(receiveSize))
+                    plaintext = rc4Decrypt(data, bytes(str(self.password), 'utf-8'))
+                    if "Response End" in plaintext.encode("utf-8").decode('utf-8'):
+                        #print("Fin de respuesta")
+                        self.busy=False
+                    else:
+                    	print(plaintext.encode("utf-8").decode('utf-8')+"\n", end=" ")
                     sys.stdout.flush()
         except KeyboardInterrupt:
             return
@@ -210,6 +225,7 @@ class RevHandlerRC4:
             rawBytes = rawBytes[:i]+rawBytes[i+1:]
             i = rawBytes.find(b'\x00')
         self.sock.send(struct.pack("<H", len(data))+rawBytes)
+        self.busy=True
 
     def connect(self):
         try:

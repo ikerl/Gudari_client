@@ -26,11 +26,12 @@ PARAMS={'LHOST':'',
         'SHPORT':'4568',
         'RANDOM':'1',
         'SESSION':'0',
+        'RC4': "True",
         'PASSWORD':'abcd'}
 
 SESSIONS={'0':"main"} #Zero session is the main console
 SID=0 # Session counter, set to zero
-LAG=0.5 #Use lower values in faster connections 
+LAG=0.1 #Use lower values in faster connections 
 
 #Functions
 def prWelcome():
@@ -67,7 +68,7 @@ def addSession():
     Msg.info("Adding new session...")
     SID+=1
     sSID=str(SID)
-    if not PARAMS['PASSWORD']:
+    if "FALSE" in PARAMS['RC4'].upper():
         SESSIONS[sSID]=GudariHandler(PARAMS['LHOST'],int(PARAMS['LPORT']))
     else:
         SESSIONS[sSID]=GudariRC4Handler(PARAMS['LHOST'],int(PARAMS['LPORT']),str(PARAMS['PASSWORD']))
@@ -282,6 +283,12 @@ def consoleGudari():
     global PARAMS
 
     try:
+        timeout = 0
+        while SESSIONS[PARAMS['SESSION']].busy and timeout < 100:
+                timeout += 1
+                time.sleep(LAG)
+                None
+
         uinput = input(getPrompt())
         opts = uinput.split()
         action = opts[0].upper()
@@ -295,19 +302,15 @@ def consoleGudari():
             
         elif action=="RUN":
             SID=addSession()
-            time.sleep(LAG)
         
         elif action=="SHELL":
             SID=addShellSession(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']])
-            time.sleep(LAG)
 
         elif action=="POWERSHELL":
             SID=addPowerShellSession(PARAMS['SESSION'],SESSIONS[PARAMS['SESSION']])
-            time.sleep(LAG)
 
         elif action=="TERMINATE":
             delSession(PARAMS['SESSION'])
-            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
 
         elif action=="DOWNLOAD":
             fDownload(PARAMS['SESSION'], opts[1])                        
@@ -317,23 +320,19 @@ def consoleGudari():
         
         elif action=="FORWARD":            
             doForward(PARAMS['SESSION'],opts[1], opts[2], opts[3])
-            time.sleep(LAG)
         
         elif action=="DELFORWARD":
             delForward(PARAMS['SESSION'], opts[1])
-            time.sleep(LAG)
         
         elif action=="HELP": gudariHelper()
 
         else:
             cmd="EXEC %s\n" % uinput
             SESSIONS[PARAMS['SESSION']].sktSend(cmd)
-            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
 
     except KeyboardInterrupt:
         print()
         delSession(PARAMS['SESSION'])
-        time.sleep(LAG) # in slow connections put higher value - prompt adjustment
 
 
 def consoleShell():
