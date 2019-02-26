@@ -14,6 +14,7 @@ import random
 import terminaltables
 import subprocess
 import threading
+import os
 
 from classes import GudariHandler, GudariRC4Handler, GudariShell, Msg
 
@@ -35,27 +36,27 @@ LAG=0.1 #Use lower values in faster connections
 
 #Functions
 def prWelcome():
-    print("""                       ____________________                      
-                      |||\ \     | |    / /|                    
-        .-\"\"\"-.       |||   \ \  | |  / /  |       
-       /=      \\      |||_____\_\| |/_/____|       
-      |- /~~~\\  |     |||________  ________|       
-      |=( '.' ) |     |||     / /| |\ \    |        
-      \\__\\_=_/__/     |||   / /  | |  \ \  |      
-       {_______}      |||/_/_____|_|____\_\|        
-     /` *       `'--._||
-    /= .     [] .     { >
-   /  /|ooo     |`'--'||             ___  __  __  ____    __    ____  ____    
-  (   )\\_______/      ||            / __)(  )(  )(  _ \\  /__\\  (  _ \\(_  _)
-   \\``\\/       \\      ||           ( (_-. )(__)(  )(_) )/(__)\\  )   / _)(_      
-    `-| ==    \\_|     ||            \\___/(______)(____/(__)(__)(_)\\_)(____)
-      /         |     ||           _   _    __    _  _  ____  __    ____  ____
-     |=   >\\  __/     ||          ( )_( )  /__\\  ( \\( )(  _ \\(  )  ( ___)(  _ \\
-     \\   \\ |- --|     ||           ) _ (  /(__)\\  )  (  )(_) ))(__  )__)  )   /
-      \\ __| \\___/     ||          (_) (_)(__)(__)(_)\\_)(____/(____)(____)(_)\\_)
-      _{__} _{__}     ||
-     (    )(    )     ||
- ^^~  `\"\"\"  `\"\"\"  ~^^^~^^~~~^^^~^^^~^^^~^^~^````    
+    print(""" \033[93m                      ____________________                      
+    \033[93m                  |||\ \     | |    / /|                    
+   \033[93m     .-\"\"\"-.       |||   \ \  | |  / /  |       
+   \033[93m    /=      \\      |||_____\_\| |/_/____|       
+  \033[93m    |- /~~~\\  |     |||________  ________|       
+  \033[93m    |=( '.' ) |     |||     / /| |\ \    |        
+  \033[93m    \\__\\_=_/__/     |||   / /  | |  \ \  |      
+  \033[93m     {_______}      |||/_/_____|_|____\_\|        
+ \033[93m    /` *       `'--._||
+ \033[93m   /= .     [] .     { >
+\033[93m   /  /|ooo     |`'--'||             \033[91m___  __  __  ____    __    ____  ____ \033[0m   
+\033[93m  (   )\\_______/      ||            \033[91m/ __)(  )(  )(  _ \\  /__\\  (  _ \\(_  _)\033[0m
+\033[93m   \\``\\/       \\      ||           \033[91m( (_-. )(__)(  )(_) )/(__)\\  )   / _)(_   \033[0m   
+ \033[93m   `-| ==    \\_|     ||            \033[91m\\___/(______)(____/(__)(__)(_)\\_)(____)\033[0m
+ \033[93m     /         |     ||           \033[91m_   _    __    _  _  ____  __    ____  ____\033[0m
+ \033[93m    |=   >\\  __/     ||          \033[91m( )_( )  /__\\  ( \\( )(  _ \\(  )  ( ___)(  _ \\\033[0m
+  \033[93m   \\   \\ |- --|     ||           \033[91m) _ (  /(__)\\  )  (  )(_) ))(__  )__)  )   /\033[0m
+  \033[93m    \\ __| \\___/     ||          \033[91m(_) (_)(__)(__)(_)\\_)(____/(____)(____)(_)\\_)\033[0m
+ \033[93m     _{__} _{__}     ||
+ \033[93m    (    )(    )     ||
+ \033[92m^^~  `\"\"\"  `\"\"\"  ~^^^~^^~~~^^^~^^^~^^^~^^~^````   \033[0m 
     """)
 def randomPort():
     return str(random.randint(40000,65535))
@@ -277,6 +278,10 @@ def consoleMain():
     
     elif action=="HELP": mainHelper()
 
+    elif action[:1]=="!": 
+         command = opts[0].replace("!","")
+         os.system(command)
+
 def consoleGudari():
     global SID
     global LAG
@@ -326,6 +331,10 @@ def consoleGudari():
         
         elif action=="HELP": gudariHelper()
 
+        elif action[:1]=="!": 
+             command = opts[0].replace("!","")
+             os.system(command)
+
         else:
             cmd="EXEC %s\n" % uinput
             SESSIONS[PARAMS['SESSION']].sktSend(cmd)
@@ -351,7 +360,7 @@ def consoleShell():
 
         elif action=="!TERMINATE" or action=="EXIT":
             delSession(PARAMS['SESSION'])
-            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+            #time.sleep(LAG) # in slow connections put higher value - prompt adjustment
     
         elif action=="!SHOW":
             var = opts[1].upper()
@@ -361,12 +370,12 @@ def consoleShell():
         elif action=="!HELP": 
             shellHelper()
             if o_sess==PARAMS['SESSION']:SESSIONS[PARAMS['SESSION']].sktSend("\n")
-            time.sleep(LAG)
+            #time.sleep(LAG)
                 
         else:    
             cmd="%s\n" % uinput
             SESSIONS[PARAMS['SESSION']].sktSend(cmd)
-            time.sleep(LAG) # in slow connections put higher value - prompt adjustment
+            #time.sleep(LAG) # in slow connections put higher value - prompt adjustment
     except KeyboardInterrupt:
         print()
         delSession(PARAMS['SESSION'])

