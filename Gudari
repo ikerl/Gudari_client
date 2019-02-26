@@ -332,7 +332,7 @@ def consoleGudari():
         elif action=="HELP": gudariHelper()
 
         elif action[:1]=="!": 
-             command = opts[0].replace("!","")
+             command = uinput.replace("!","")
              os.system(command)
 
         else:
