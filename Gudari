@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 
-'''
-TODO LIST
--> run local commands
--> catch null inputs in consoles -> there is a global exception that catches it but can be improved
--> execall -> run commands in all connected bots
--> Add helpers to manage
--> Tab completion
-'''
 import time
 import readline
 import random
@@ -222,7 +214,6 @@ def mainHelper():
     data.append(['SHOW','OPT|SES','Shows OPTIONS and SESSIONS'])
     data.append(['SET','VAR VALUE','Check available VARS with SHOW OPTIONS'])
     data.append(['RUN','(none)','Spawns a Gudari listener with the active conf.'])
-    data.append(['EXECALL','cmd','Executes a command in all Gudaris'])
     data.append(['EXIT','(none)','alias: QUIT, TERMINATE'])
     printTable(data, title)
 
@@ -272,9 +263,6 @@ def consoleMain():
     elif action=="RUN":
         SID=addSession()
         time.sleep(LAG)
-    
-    elif action=="EXECALL":
-        Msg.dbg("Exec ALL NOT IMPLEMENTED")
     
     elif action=="HELP": mainHelper()
 

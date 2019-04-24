@@ -225,14 +225,7 @@ class RevHandlerRC4:
             return            
 
     def sktSend(self, data):     
-        #cifrado = RC4Encrypt(self.password, data)
         arc4 = ARC4(self.password)
-        #rawBytes = rawbytes(cifrado)
-        #i = rawBytes.find(b'\x00')
-        #while i != -1:
-        #    print("Encontrado: "+str(i))
-        #    rawBytes = rawBytes[:i]+rawBytes[i+1:]
-        #    i = rawBytes.find(b'\x00')
         self.sock.send(struct.pack("<H", len(data))+arc4.encrypt(data))
         self.busy=True
 
