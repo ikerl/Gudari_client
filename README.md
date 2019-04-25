@@ -50,3 +50,8 @@ Una de las partes más importantes de Gudari es su integración con los diferent
 ![](https://raw.githubusercontent.com/ikerl/Gudari_client/master/src/sessions.png)
 
 ![](https://raw.githubusercontent.com/ikerl/Gudari_client/master/src/fwds.png)
+
+## Dependencias
+
+- **ARC4:** [https://pypi.org/project/arc4/](https://pypi.org/project/arc4/)
+- **TerminalTables**: [https://pypi.org/project/terminaltables/](https://pypi.org/project/terminaltables/)
