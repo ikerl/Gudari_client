@@ -398,6 +398,8 @@ while True:
         Msg.warn("Closing all connections...")
         closeAllSessions()
         break
+    except IndexError:
+        None
     except Exception as e:  #Disabling this exception will help debugging
         Msg.dbg(str(e))     #But breaks quite thing on small bugs
 exit(0)
