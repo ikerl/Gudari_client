@@ -15,7 +15,7 @@
 ## Resumen:
 
 Gudari es una herramienta para controlar equipos remotamente (RAT) que tiene como objetivo agilizar el proceso de pentesting en equipos Windows. Para ello, cuenta con un set de herramientas que nos ahorrarán bastantes dolores de cabezas y evitará el uso de herramientas de terceros. Es mi primer desarrollo de este tipo y servirá como base sólida para futuros proyectos. 
-![alt text](https://github.com/ikerl/Gudari_client/src/welcome.png)
+![](https://github.com/ikerl/Gudari_client/tree/master/src/welcome.png)
 
 ## Características
 
@@ -24,7 +24,7 @@ Gudari es una herramienta para controlar equipos remotamente (RAT) que tiene com
 El cliente de Gudari usa el mismo set de comandos que Metasploit haciendo que su uso sea natural desde el primer momento. Entre esos comandos están “SHOW OPTIONS”, “SET”, “RUN/EXPLOIT”, “SHELL”, etc..
 
  
- ![alt text](https://github.com/ikerl/Gudari_client/src/options.png)
+ ![](https://github.com/ikerl/Gudari_client/tree/master/src/options.png)
  
 -	**Shell principal con soporte de cifrado RC4**
 
@@ -41,12 +41,12 @@ Con el comando forward podemos mapear puertos remotos de la máquina gestionada 
 
 -	**Powershell interactiva**
 
- ![alt text](https://github.com/ikerl/Gudari_client/src/help.png)
+ ![](https://github.com/ikerl/Gudari_client/tree/master/src/help.png)
 
 ## Integración:
 
 Una de las partes más importantes de Gudari es su integración con los diferentes módulos que incluye. Podemos crear, borrar o mirar Shell y port forwardings en cualquier momento y podemos cambiar de tipo de Shell simplemente haciendo un “SET SESSION” e indicando la sesión que queremos controlar.
 
-![alt text](https://github.com/ikerl/Gudari_client/src/sessions.png)
+![](https://github.com/ikerl/Gudari_client/tree/master/src/sessions.png)
 
-![alt text](https://github.com/ikerl/Gudari_client/src/fwds.png)
+![](https://github.com/ikerl/Gudari_client/tree/master/src/fwds.png)
