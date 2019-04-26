@@ -379,7 +379,7 @@ prWelcome()
 ip=subprocess.getoutput("ifconfig eth0 | sed -n 2p | awk '{print $2}'")
 if not "error" in ip: PARAMS['LHOST'] = ip
 
-while True:    
+while True:   
     try:
         #Need to control SESSION is an instance
         if 'classes' in str(type(SESSIONS[PARAMS['SESSION']])):
