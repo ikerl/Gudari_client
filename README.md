@@ -14,7 +14,7 @@
 
 ## Resumen:
 
-Gudari es una herramienta para controlar equipos remotamente (RAT) que tiene como objetivo agilizar el proceso de pentesting en equipos Windows. Para ello, cuenta con un set de herramientas que nos ahorrarán bastantes dolores de cabezas y evitará el uso de herramientas de terceros. Es mi primer desarrollo de este tipo y servirá como base sólida para futuros proyectos. 
+Gudari es una herramienta para controlar equipos remotamente (RAT) que tiene como objetivo agilizar el proceso de pentesting en equipos Windows. Para ello, cuenta con herramientas que nos ahorrarán bastantes dolores de cabezas y evitará el que tengamos que usar herramientas de terceros. Es mi primer desarrollo de este tipo y me servirá como base sólida para futuros proyectos. 
 ![](https://raw.githubusercontent.com/ikerl/Gudari_client/master/src/welcome.png)
 
 ## Características
